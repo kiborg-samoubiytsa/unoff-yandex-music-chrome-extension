@@ -1,0 +1,184 @@
+.track {
+  user-select: none;
+  position: relative;
+  max-width: 280px;
+  box-sizing: border-box;
+  height: 60px;
+  text-align: start;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  font-family: "Source Sans Pro", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  box-sizing: border-box;
+  .likeButton_active {
+    display: none;
+  }
+  .likeButton {
+    display: none;
+  }
+
+  .index {
+    display: none;
+  }
+  .duration {
+    color: white;
+    padding-left: 20px;
+    padding-right: 15px;
+  }
+  .cover {
+    position: absolute;
+    z-index: 0;
+  }
+
+  .trackInfo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 300px;
+    margin-top: 6px;
+    margin-left: 60px;
+    .title {
+      width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: white;
+    }
+    .artist {
+      position: relative;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      height: 24px;
+      width: 170px;
+      flex-direction: row;
+      font-family: "Source Sans Pro", sans-serif;
+      font-weight: 400;
+      color: #777;
+    }
+  }
+  .pauseButton {
+    cursor: pointer;
+    display: none;
+  }
+  .controlButtonContainer:hover {
+    color: white;
+  }
+  .playButton {
+    display: none;
+  }
+
+  .playingTrackAnimationContainer {
+    z-index: 1;
+    display: flex;
+    position: absolute;
+    top: 40%;
+    left: 20px;
+    width: 20px;
+    .playingTrackAnimation {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #6633cc;
+      animation: pulse 1s ease-in-out infinite;
+    }
+  }
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.track:hover {
+  border: 2px solid #6633cc;
+  position: relative;
+  width: 100%;
+  height: 60px;
+  text-align: start;
+  max-width: 280px;
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  font-family: "Source Sans Pro", sans-serif;
+  font-weight: 400;
+  color: black;
+  .index {
+    display: none;
+  }
+  .duration {
+    padding-left: 20px;
+    padding-right: 15px;
+  }
+  .trackInfo {
+    margin-left: 60px;
+    margin-top: 6px;
+    width: 160px;
+    display: flex;
+    .artist {
+      display: inline-block;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      max-width: 120px;
+      height: 24px;
+      flex-direction: row;
+      font-family: "Source Sans Pro", sans-serif;
+      font-weight: 400;
+    }
+    .title {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+  .pauseButton {
+    cursor: pointer;
+    display: flex;
+  }
+  .controlButtonContainer:hover {
+    color: white;
+  }
+  .controlButtonContainer {
+    z-index: 1;
+    position: absolute;
+    min-width: 27px;
+    min-height: 27px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 12px;
+    background-color: #6633cc;
+    border-radius: 50%;
+    color: rgb(240, 240, 240);
+    .playButton {
+      display: inline;
+      z-index: 1;
+      margin-left: 3px;
+      cursor: pointer;
+    }
+  }
+  .playingTrackAnimationContainer {
+    display: none;
+  }
+  .likeButton_active {
+    cursor: pointer;
+    display: inline;
+    color: #5d6fe4;
+  }
+  .likeButton {
+    cursor: pointer;
+    display: inline;
+    color: #a7a2a3;
+  }
+}

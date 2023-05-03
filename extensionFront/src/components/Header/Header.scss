@@ -1,0 +1,60 @@
+.header {
+  position: relative;
+  display: flex;
+  height: 45px;
+  width: 320px;
+  position: sticky top;
+  margin-top: 0;
+  margin-bottom: 0;
+  background-color: #0e0e0e;
+  font-family: "Source Sans Pro", sans-serif;
+  border-bottom: 3px white solid;
+  font-weight: 400;
+  font-size: 18px;
+  justify-content: center;
+  align-items: center;
+  .contentContainer {
+    justify-content: center;
+    width: 100%;
+    display: flex;
+    .enable_search:hover {
+      .enable_search-button {
+        cursor: pointer;
+        color: white;
+      }
+    }
+    .enable_search {
+      .enable_search-button:active {
+        width: 22px;
+        height: 22px;
+      }
+    }
+    .enable_search {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      .enable_search-button {
+        width: 24px;
+        height: 24px;
+        transition: color 0.3s;
+        color: #a7a2a3;
+      }
+    }
+
+    .exitButtonContainer:hover {
+      .exitButton {
+        cursor: pointer;
+        color: #5d6fe4;
+      }
+    }
+    .exitButtonContainer {
+      .exitButton {
+        transition: color 0.3s;
+        position: fixed;
+        color: #a7a2a3;
+        top: 10px;
+        right: 10px;
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Zvuk-ponosa-auth-extension",
+  "version": "1.0.0",
+  "permissions": ["tabs", "cookies", "storage", "offscreen"],
+  "host_permissions": [
+    "https://zvuk-ponosa.glitch.me/",
+    "http://localhost:3000/"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "description": "Любишь бесплатную музыку, да? Я тоже ее люблю, а Яндекс не любит. Собственно только поэтому это расширение и существует",
+  "action": {
+    "default_popup": "./dist/index.html",
+    "default_title": "zvuk-ponosa"
+  }
+}

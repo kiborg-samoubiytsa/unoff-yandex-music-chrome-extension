@@ -1,0 +1,64 @@
+.exit_confirm_container {
+  width: 100%;
+  height: 100%;
+  .exit_confirm {
+    z-index: 99;
+    position: absolute;
+    top: 200px;
+    right: 20px;
+    background-color: white;
+    width: 280px;
+    height: 200px;
+    border-radius: 20px;
+    box-shadow: 1px 1px 1px 1000px rgba(0, 0, 0, 0.6);
+    font-family: "Source Sans Pro", sans-serif;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    .exit_confirm_text {
+      margin-top: 40px;
+      font-size: 30px;
+    }
+    .exit_confirm_buttons {
+      margin-top: 20px;
+      width: 220px;
+      display: flex;
+      justify-content: space-between;
+    }
+    button {
+      font-family: "Source Sans Pro", sans-serif;
+      font-style: normal;
+      text-align: center;
+      font-optical-sizing: auto;
+      font-stretch: normal;
+      font-weight: 400;
+      font-size: 24px;
+      cursor: pointer;
+      height: 40px;
+      width: 100px;
+      outline: none;
+      border: none;
+      background-color: white;
+    }
+    .exit_confirm_button-confirm {
+      transition: background-color 0.3s;
+      background-color: #6633cc;
+      color: white;
+    }
+    .exit_confirm_button-confirm:hover {
+      background-color: #855cd6;
+    }
+    .exit_confirm_button-cancel {
+      transition: background-color 0.3s;
+      background-color: white;
+      border: 3px black solid;
+    }
+
+    .exit_confirm_button-cancel:hover {
+      background-color: black;
+      color: white;
+      border: 3px black solid;
+    }
+  }
+}

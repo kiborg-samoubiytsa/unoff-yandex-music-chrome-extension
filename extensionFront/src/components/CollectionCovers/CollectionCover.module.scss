@@ -1,0 +1,90 @@
+.title {
+  font-family: "Source Sans Pro", sans-serif;
+  width: 120px;
+  font-size: 16px;
+  font-weight: 200;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 400;
+  color: white;
+  text-decoration: none;
+  list-style-type: none;
+}
+
+.title:hover {
+  color: #5d6fe4;
+}
+.coverGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 50px);
+  margin-bottom: 4px;
+}
+.coverContainer_even,
+.coverContainer_uneven {
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: flex-start;
+  justify-content: center;
+  height: 150px;
+  user-select: none;
+}
+.cover {
+  margin-bottom: 10px;
+  background-color: transparent;
+  .coverPlayButtonContainer {
+    display: none;
+    .coverPlayButton {
+      display: none;
+    }
+  }
+}
+.coverContainer_even:hover {
+  transform: translateX(10px) translateY(5px);
+  box-shadow: 1px 1px 10px 3px rgba(255, 255, 255, 0.8);
+  border: #6633cc solid 2px;
+  .coverPlayButtonContainer {
+    cursor: pointer;
+    margin-top: 30px;
+    margin-left: 30px;
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #6633cc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .coverPlayButton {
+      margin-left: 3px;
+      display: flex;
+      color: white;
+    }
+  }
+}
+.coverContainer_uneven:hover {
+  transform: translateX(-10px) translateY(5px);
+  box-shadow: 1px 1px 10px 3px rgba(255, 255, 255, 0.8);
+  border: #6633cc solid 2px;
+  .coverPlayButtonContainer {
+    cursor: pointer;
+    margin-top: 30px;
+    margin-left: 30px;
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #6633cc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    .coverPlayButton {
+      margin-left: 3px;
+      display: flex;
+      color: white;
+    }
+  }
+}

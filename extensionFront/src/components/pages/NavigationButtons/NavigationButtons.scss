@@ -1,0 +1,26 @@
+.navigationButtons {
+  width: 100%;
+  top: 40px;
+  position: fixed;
+  display: flex;
+  justify-content: space-between;
+}
+
+.navigationButton {
+  transition: 0.3s color;
+  height: 30px;
+  align-items: center;
+  text-decoration: none;
+  width: auto;
+  color: #777;
+  display: flex;
+  justify-content: center;
+  font-size: 14px;
+  font-family: "Source Sans Pro", sans-serif;
+  .navigationDescription {
+    margin-right: 4px;
+  }
+}
+.navigationButton:hover {
+  color: white;
+}
