@@ -9,10 +9,12 @@ import { AppDispatch } from "../../store/store";
 import { IPlaylist } from "../../types/types";
 import { PlaylistCover } from "../CollectionCovers/PlaylistCover";
 import { NavigationButtons } from "../pages/NavigationButtons/NavigationButtons";
+import { _navigationStyles } from "../../store/reducers/navigationSlice";
 import "./Collection.scss";
 
 export const UserPlaylists: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigationStyles = useSelector(_navigationStyles);
   const favoriteTracks = useSelector(favoriteTrackIds);
   const localStoragePlaylists = localStorage.getItem("user-playlists")
     ? JSON.parse(localStorage.getItem("user-playlists") || "")
@@ -32,10 +34,19 @@ export const UserPlaylists: FC = () => {
       dispatch(fetchFavoriteTracks());
     }
   }, []);
+  useEffect(() => {
+    console.log(navigationStyles);
+  }, [navigationStyles]);
 
   return (
     <>
-      <div className="userCollectionContainer">
+      <div
+        className={
+          navigationStyles == "back"
+            ? "userCollectionContainer-back"
+            : "userCollectionContainer-forward"
+        }
+      >
         <NavigationButtons
           back={{ page: "podcasts", description: "Подкасты" }}
           forward={{ page: "albums", description: "Альбомы" }}

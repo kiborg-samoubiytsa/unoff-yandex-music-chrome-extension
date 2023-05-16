@@ -5,12 +5,18 @@ import {
   IPlaylist,
   SimilarTracks,
   Track as ITrack,
+  RotorTrack,
 } from "../../types/types";
 import { useSelector } from "react-redux";
 import { queueType as type } from "../../store/reducers/currentQueueSlice";
 import { CloseButton } from "./QueueCloseButton";
 interface Props {
-  queueInfo: AlbumWithTracks | IPlaylist | SimilarTracks | ITrack[];
+  queueInfo:
+    | AlbumWithTracks
+    | IPlaylist
+    | SimilarTracks
+    | ITrack[]
+    | RotorTrack[];
   setIsQueueDisplayed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 export const QueueInfo: FC<Props> = ({ queueInfo, setIsQueueDisplayed }) => {

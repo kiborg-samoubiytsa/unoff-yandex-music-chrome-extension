@@ -11,8 +11,6 @@ import axios from "axios";
 import { RootState } from "../store";
 
 interface CollectionState {
-  isPlaylistSelected: boolean;
-  isTrackSelected: boolean;
   selectedItemInfo: IPlaylist | AlbumWithTracks | FullTrackInfo;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | undefined;
@@ -21,8 +19,6 @@ interface CollectionState {
 }
 
 const initialState: CollectionState = {
-  isTrackSelected: false,
-  isPlaylistSelected: false,
   selectedItemInfo: {} as IPlaylist | AlbumWithTracks,
   status: "idle",
   error: undefined,
@@ -78,15 +74,10 @@ export const currentPlaylistSlice = createSlice({
   name: "tracks",
   initialState,
   reducers: {
-    setIsCollectionSelected(state, action: PayloadAction<boolean>) {
-      state.isPlaylistSelected = action.payload;
-    },
     setSelectedItemType(state, action: PayloadAction<CollectionState["type"]>) {
-      state.type = action.payload;
+      state.type = action.payload; //method is needed to reset collection type
     },
-    setIsTrackSelected(state, action: PayloadAction<boolean>) {
-      state.isTrackSelected = action.payload;
-    },
+
     setItemMetadata(state, action: PayloadAction<string>) {
       state.selectedItemMetadata = action.payload;
     },
@@ -134,17 +125,9 @@ export const currentPlaylistSlice = createSlice({
 export const selectedCollection = (state: RootState) =>
   state.playlistSlice.selectedItemInfo;
 export const status = (state: RootState) => state.playlistSlice.status;
-export const isCollectionSelected = (state: RootState) =>
-  state.playlistSlice.isPlaylistSelected;
-export const isTrackSelected = (state: RootState) =>
-  state.playlistSlice.isTrackSelected;
 export const collectionType = (state: RootState) => state.playlistSlice.type;
 export const selectedItemMeta = (state: RootState) =>
   state.playlistSlice.selectedItemMetadata;
-export const {
-  setIsCollectionSelected,
-  setSelectedItemType,
-  setIsTrackSelected,
-  setItemMetadata,
-} = currentPlaylistSlice.actions;
+export const { setSelectedItemType, setItemMetadata } =
+  currentPlaylistSlice.actions;
 export const playlistSlice = currentPlaylistSlice.reducer;

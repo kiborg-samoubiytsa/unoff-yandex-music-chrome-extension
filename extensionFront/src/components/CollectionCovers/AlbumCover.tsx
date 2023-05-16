@@ -6,8 +6,8 @@ import {
   status as loadingStatus,
   selectedCollection,
   fetchAlbum,
-  setIsCollectionSelected,
   setItemMetadata,
+  collectionType as _collectionType,
 } from "../../store/reducers/selectedItemSlice";
 import { AppDispatch } from "../../store/store";
 import { CoverPlayButton } from "./CoverPlayButton";
@@ -22,14 +22,15 @@ export const AlbumCover: FC<Props> = ({ albumInfo, metadata, index }) => {
   const dispatch = useDispatch<AppDispatch>();
   const collectionStatus = useSelector(loadingStatus);
   const selectedAlbum = useSelector(selectedCollection);
+  const collectionType = useSelector(_collectionType);
   const selectAlbum = () => {
     if (
       ((selectedAlbum as Album).id != albumInfo.id &&
         collectionStatus == "succeeded") ||
-      collectionStatus == "idle"
+      collectionStatus == "idle" ||
+      collectionType == "not-selected"
     ) {
       dispatch(fetchAlbum({ albumId: albumInfo.id }));
-      dispatch(setIsCollectionSelected(true));
       dispatch(setItemMetadata(metadata));
     }
   };

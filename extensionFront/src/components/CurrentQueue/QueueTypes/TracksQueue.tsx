@@ -15,15 +15,11 @@ export const TracksQueue: FC<Props> = ({ currentQueue }) => {
       {currentQueue.map((track, index: number) =>
         track.availableForPremiumUsers ? (
           <Track
-            title={track.title}
-            id={track.id}
-            trackCover={`https://${track.ogImage!.replace("%%", "50x50")}`}
+            showCover={true}
             index={index}
             key={index}
-            artists={track.artists}
-            duration={track.durationMs}
+            track={track}
             styles={trackStyles}
-            albumId={track.albums[0].id}
             collectionType="track"
           ></Track>
         ) : (

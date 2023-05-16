@@ -5,12 +5,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store/store";
 import {
   fetchPlaylist,
-  setIsCollectionSelected,
   status as playlistStatus,
   selectedCollection as source,
-  setIsTrackSelected,
   setItemMetadata,
-  isCollectionSelected,
+  collectionType as _collectionType,
 } from "../../store/reducers/selectedItemSlice";
 import { CoverPlayButton } from "./CoverPlayButton";
 import { Link } from "react-router-dom";
@@ -26,14 +24,14 @@ export const PlaylistCover: FC<Props> = ({ playlistInfo, metadata, index }) => {
   const dispatch = useDispatch<AppDispatch>();
   const collectionStatus = useSelector(playlistStatus);
   const selectedPlaylist = useSelector(source);
-  const isPlaylistSelected = useSelector(isCollectionSelected);
+  const collectionType = useSelector(_collectionType);
   const handlePlaylistSelect = () => {
     if (
       (collectionStatus == "succeeded" &&
         playlistInfo!.playlistUuid !=
           (selectedPlaylist as IPlaylist).playlistUuid) ||
       collectionStatus == "idle" ||
-      !isPlaylistSelected
+      collectionType == "not-selected"
     ) {
       dispatch(
         fetchPlaylist({
@@ -41,8 +39,6 @@ export const PlaylistCover: FC<Props> = ({ playlistInfo, metadata, index }) => {
           kind: playlistInfo?.kind,
         })
       );
-      dispatch(setIsTrackSelected(false));
-      dispatch(setIsCollectionSelected(true));
       dispatch(setItemMetadata(metadata));
     }
     return;

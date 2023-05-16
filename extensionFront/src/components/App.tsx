@@ -16,7 +16,6 @@ import CurrentQueuePage from "./CurrentQueue/CurrentQueue";
 import { Auth } from "./pages/Auth/Auth";
 import { UserAlbumsPage } from "./pages/UserAlbumsPage";
 import { UserPodcastsPage } from "./pages/UserPodcastsPage";
-import { PlaylistPage } from "./pages/PlaylistPage/PlaylistPage";
 import { ExitConfirm } from "./ExitConfirm/ExitConfirm";
 const App: FC = () => {
   //TODO менять текущий плейлист только по нажатию на трек
@@ -67,10 +66,6 @@ const App: FC = () => {
                     ></Route>
                     <Route />
                   </Route>
-                  <Route
-                    path="users/:userId/playlists/:playlistId"
-                    element={<PlaylistPage />}
-                  />
                 </Routes>
               </div>
             )}

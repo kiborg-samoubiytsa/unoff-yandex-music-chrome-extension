@@ -11,8 +11,6 @@ rootDiv.style.minWidth = "320px";
 
 rootDiv.style.maxHeight = "600px";
 
-document;
-
 const root = ReactDOM.createRoot(rootDiv as HTMLElement);
 root.render(
   <React.StrictMode>

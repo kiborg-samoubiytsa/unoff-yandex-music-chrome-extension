@@ -10,10 +10,12 @@ import {
 } from "../../store/reducers/favoriteTracksSlice";
 import { AppDispatch } from "../../store/store";
 import { NavigationButtons } from "../pages/NavigationButtons/NavigationButtons";
+import { _navigationStyles } from "../../store/reducers/navigationSlice";
 
 export const UserAlbums: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const favoriteTracks = useSelector(favoriteTrackIds);
+  const navigationStyles = useSelector(_navigationStyles);
   const userData = JSON.parse(localStorage.getItem("user-data") || "");
   const localStorageAlbums = localStorage.getItem("user-albums")
     ? JSON.parse(localStorage.getItem("user-albums") || "")
@@ -32,8 +34,18 @@ export const UserAlbums: FC = () => {
       console.log(data);
     }
   }, [data]);
+
+  useEffect(() => {
+    console.log(navigationStyles);
+  }, [navigationStyles]);
   return (
-    <div className="userCollectionContainer">
+    <div
+      className={
+        navigationStyles == "back"
+          ? "userCollectionContainer-back"
+          : "userCollectionContainer-forward"
+      }
+    >
       <NavigationButtons
         back={{ page: "playlists", description: "Плейлисты" }}
         forward={{ page: "podcasts", description: "Подкасты" }}
@@ -52,7 +64,7 @@ export const UserAlbums: FC = () => {
                   metadata="web-own_albums-album-track-fridge"
                 />
               ) : (
-                <></>
+                <div key={index}></div>
               )
             )
           ) : (
@@ -65,7 +77,7 @@ export const UserAlbums: FC = () => {
                   metadata="web-own_albums-album-track-fridge"
                 />
               ) : (
-                <></>
+                <div key={index}></div>
               )
             )
           )

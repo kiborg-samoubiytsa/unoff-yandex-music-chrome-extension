@@ -7,11 +7,13 @@ import { Album } from "../../types/types";
 import { fetchFavoriteTracks } from "../../store/reducers/favoriteTracksSlice";
 import { NavigationButtons } from "../pages/NavigationButtons/NavigationButtons";
 import "./Collection.scss";
+import { _navigationStyles } from "../../store/reducers/navigationSlice";
 import { AlbumCover } from "../CollectionCovers/AlbumCover";
 
 export const UserPodcasts: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const favoriteTracks = useSelector(favoriteTrackIds);
+  const navigationStyles = useSelector(_navigationStyles);
   const userData = JSON.parse(localStorage.getItem("user-data") || "");
   const localStoragePodcasts = localStorage.getItem("user-podcasts")
     ? JSON.parse(localStorage.getItem("user-podcasts") || "")
@@ -30,8 +32,17 @@ export const UserPodcasts: FC = () => {
       console.log(data);
     }
   }, [data]);
+  useEffect(() => {
+    console.log(navigationStyles);
+  }, [navigationStyles]);
   return (
-    <div className="userCollectionContainer">
+    <div
+      className={
+        navigationStyles == "back"
+          ? "userCollectionContainer-back"
+          : "userCollectionContainer-forward"
+      }
+    >
       <NavigationButtons
         back={{ page: "albums", description: "Альбомы" }}
         forward={{ page: "playlists", description: "Плейлисты" }}

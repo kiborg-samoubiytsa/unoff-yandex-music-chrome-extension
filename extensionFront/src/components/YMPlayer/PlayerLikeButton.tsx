@@ -23,17 +23,21 @@ export const PlayerLikeButton: FC<Props> = ({ isRadioMode, from }) => {
   const currentTrackAlbum = useSelector(trackAlbum);
   const favoriteTracks = useSelector(favoriteTrackIds);
 
-  const handleTrackLike = () => {
-    addTracksToFavorite(currentTrackId, currentTrackAlbum);
+  useEffect(() => {
+    console.log(currentTrackId);
+  }, []);
+
+  const handleTrackLike = async () => {
+    await addTracksToFavorite(currentTrackId, currentTrackAlbum);
     dispatch(
-      setFavoriteTrackIds([...favoriteTracks, currentTrackId.toString()])
+      setFavoriteTrackIds([...favoriteTracks, currentTrackId?.toString()])
     );
     if (isRadioMode) {
       sendRotorFeedBack("like", from, `${currentTrackId}:${currentTrackAlbum}`);
     }
   };
-  const handleTrackDislike = () => {
-    removeFromFavorite(currentTrackId);
+  const handleTrackDislike = async () => {
+    await removeFromFavorite(currentTrackId);
     dispatch(
       setFavoriteTrackIds(
         favoriteTracks.filter((id) => id != currentTrackId.toString())
@@ -44,7 +48,7 @@ export const PlayerLikeButton: FC<Props> = ({ isRadioMode, from }) => {
   return (
     <div>
       <IconContext.Provider value={{ size: "24px" }}>
-        {favoriteTracks.includes(currentTrackId.toString()) ? (
+        {favoriteTracks.includes(currentTrackId?.toString()) ? (
           <AiFillHeart
             onClick={handleTrackDislike}
             className={styles.likeButton_active}

@@ -4,10 +4,7 @@ import { BiPlay } from "react-icons/bi";
 import { IconContext } from "react-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store/store";
-import {
-  setIsRadioMode,
-  setPlayerVisible,
-} from "../../store/reducers/playerSlice";
+import { setIsRadioMode } from "../../store/reducers/playerSlice";
 import {
   setIsPlaying,
   setIndex,
@@ -22,7 +19,6 @@ import {
 } from "../../types/types";
 import {
   currentQueue,
-  isVisible,
   queueType,
   setCurrentQueue,
   setQueueType,
@@ -51,7 +47,6 @@ const PlayButton: FC<Props> = ({
   const sourceType = useSelector(queueType);
   const currentTrackId = useSelector(trackId);
 
-  const isPlayerVisible = useSelector(isVisible);
   const isTrackPlaying = useSelector(isPlaying);
 
   const handlePlay = async (e: React.MouseEvent<SVGElement, MouseEvent>) => {
@@ -62,7 +57,7 @@ const PlayButton: FC<Props> = ({
       state: "playing",
     });
     console.log("плеинг нажался");
-
+    console.log(index);
     console.log("негр1");
 
     console.log(collectionInfo as AlbumWithTracks);
@@ -102,6 +97,20 @@ const PlayButton: FC<Props> = ({
       collectionType == "playlist" &&
       (collectionInfo as IPlaylist).playlistUuid !=
         (source as IPlaylist).playlistUuid
+    ) {
+      dispatch(setCurrentQueue(collectionInfo as IPlaylist));
+      dispatch(setQueueType("playlist"));
+      chrome?.runtime.sendMessage({
+        currentQueue: collectionInfo,
+        type: "playlist",
+        offscreen: true,
+      });
+    }
+    if (
+      sourceType == collectionType &&
+      collectionType == "playlist" &&
+      (collectionInfo as IPlaylist).trackCount !=
+        (source as IPlaylist).trackCount
     ) {
       dispatch(setCurrentQueue(collectionInfo as IPlaylist));
       dispatch(setQueueType("playlist"));
@@ -163,11 +172,11 @@ const PlayButton: FC<Props> = ({
       dispatch(setIsPlaying(true));
     }
   };
-  const handleStop = async (e: React.MouseEvent<SVGElement, MouseEvent>) => {
+  const handlePause = async (e: React.MouseEvent<SVGElement, MouseEvent>) => {
     e.stopPropagation();
     dispatch(setIsPlaying(false));
     const response = await chrome.runtime.sendMessage({
-      state: "playing",
+      state: "paused",
     });
     console.log("плеинг нажался");
   };
@@ -183,7 +192,7 @@ const PlayButton: FC<Props> = ({
         ) : (
           <div>
             <AiOutlinePause
-              onClick={(e) => handleStop(e)}
+              onClick={(e) => handlePause(e)}
               className={styles.pauseButton}
             />
             <div className={styles.playingTrackAnimationContainer}>

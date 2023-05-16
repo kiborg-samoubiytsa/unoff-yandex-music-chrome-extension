@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import axios from "axios";
 interface playerState {
+  currentTrackProgress: number;
   isPlaying: boolean;
   playId: string;
   index: number | null;
@@ -11,24 +12,69 @@ interface playerState {
   currentTrackTitle: string;
   currentTrackArtists: [];
   currentTrackUrl: string;
-
+  currentTrackDuration: number;
   metadata: string;
-  status: "idle" | "loading" | "succeeded" | "failed" | "playing";
+  status:
+    | "idle"
+    | "loading"
+    | "succeeded"
+    | "failed"
+    | "playing"
+    | "loaded-from-localStorage";
 }
 
+const {
+  localCurrentDuration,
+  localTitle,
+  localCover,
+  localArtists,
+  localCurrentTrackId,
+  localMetadata,
+  localIndex,
+  localIsPlaying,
+  localCurrentTrackAlbumId,
+  localSrc,
+  localPlayId,
+  localMaxDuration,
+} = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState") || "")
+  : {
+      localCurrentDuration: 0,
+      localTitle: "",
+      localCover: "",
+      localArtists: [],
+      localCurrentTrackId: "",
+      localMetadata: "",
+      localIndex: null,
+      localIsPlaying: false,
+      localSrc: "",
+      localMaxDuration: 0,
+      localCurrentTrackAlbumId: 0,
+      localPlayId: "",
+    };
+
+console.log(localIndex);
+console.log(localCurrentTrackId);
+
 const initialState: playerState = {
-  isPlaying: false,
-  playId: "",
-  metadata: "",
-  index: null,
-  currentTrackId: 0,
-  currentTrackAlbumId: 0,
-  currentTrackCover: "",
-  currentTrackTitle: "",
-  currentTrackArtists: [],
-  currentTrackUrl: "",
-  status: "idle",
+  currentTrackProgress: localCurrentDuration,
+  isPlaying: localIsPlaying,
+  playId: localPlayId,
+  metadata: localMetadata,
+  index: localIndex,
+  currentTrackDuration: localMaxDuration,
+  currentTrackId: localCurrentTrackId,
+  currentTrackAlbumId: localCurrentTrackAlbumId,
+  currentTrackCover: localCover,
+  currentTrackTitle: localTitle,
+  currentTrackArtists: localArtists,
+  currentTrackUrl: localSrc,
+  status: localStorage.getItem("lastPlayerState")
+    ? "loaded-from-localStorage"
+    : "idle",
 };
+
+console.log(localCurrentDuration);
 
 export const fetchTrackUrl = createAsyncThunk(
   "track/current",
@@ -82,8 +128,11 @@ const currentTrack = createSlice({
     setArtists(state, action: PayloadAction<[]>) {
       state.currentTrackArtists = action.payload;
     },
-    setUrl(state, action: PayloadAction<string>) {
-      state.currentTrackUrl = action.payload;
+    setCurrentTrackDuration(state, action: PayloadAction<number>) {
+      state.currentTrackDuration = action.payload;
+    },
+    setCurrentTrackProgress(state, action: PayloadAction<number>) {
+      state.currentTrackProgress = action.payload;
     },
   },
   extraReducers(builder) {
@@ -95,6 +144,8 @@ const currentTrack = createSlice({
         state.status = "succeeded";
         state.currentTrackUrl = action.payload.url;
         state.currentTrackArtists = action.payload.info.artists;
+        state.currentTrackId = action.payload.info.id;
+        state.currentTrackAlbumId = action.payload.info.albums[0].id;
         console.log(action.payload.info);
         state.currentTrackCover =
           `https://${action.payload.info.coverUri?.replace("%%", "50x50")}` ||
@@ -124,6 +175,10 @@ export const isTrackPlaying = (state: RootState) =>
   state.currentTrack.isPlaying;
 export const trackAlbum = (state: RootState) =>
   state.currentTrack.currentTrackAlbumId;
+export const _trackDuration = (state: RootState) =>
+  state.currentTrack.currentTrackDuration;
+export const _trackCurrentDuration = (state: RootState) =>
+  state.currentTrack.currentTrackProgress;
 export const {
   setCover,
   setArtists,
@@ -133,6 +188,7 @@ export const {
   setCurrentTrackId,
   setTrackStatus,
   setCurrentTrackAlbum,
-  setUrl,
+  setCurrentTrackDuration,
+  setCurrentTrackProgress,
 } = currentTrack.actions;
 export default currentTrack.reducer;

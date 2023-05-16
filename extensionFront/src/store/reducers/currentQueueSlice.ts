@@ -2,26 +2,48 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   AlbumWithTracks,
   IPlaylist,
+  RotorTrack,
   SimilarTracks,
   Track,
 } from "../../types/types";
 import { RootState } from "../store";
 import { PayloadAction } from "@reduxjs/toolkit";
 
-interface tracksState {
-  tracksUrl: string[];
-  currentQueue: IPlaylist | AlbumWithTracks | SimilarTracks | Track[];
-  isDisplayed: boolean;
+interface currentQueueState {
+  currentQueue:
+    | IPlaylist
+    | AlbumWithTracks
+    | SimilarTracks
+    | Track[]
+    | RotorTrack[];
   error: string | undefined;
-  type: "playlist" | "album" | "not-selected" | "similar-tracks" | "track";
+  type:
+    | "playlist"
+    | "album"
+    | "not-selected"
+    | "similar-tracks"
+    | "track"
+    | "rotor-track";
 }
 
-const initialState: tracksState = {
-  tracksUrl: [],
-  currentQueue: {} as Required<IPlaylist> | AlbumWithTracks,
+const { localSourceQueue, localQueueType } = localStorage.getItem(
+  //gets default values from localStorage
+  "lastPlayerState"
+)
+  ? JSON.parse(localStorage.getItem("lastPlayerState") || "")
+  : {
+      localSourceQueue: {} as Required<IPlaylist> | AlbumWithTracks,
+      localQueueType: "",
+    };
+
+console.log(localSourceQueue);
+
+const initialState: currentQueueState = {
+  currentQueue: localSourceQueue
+    ? localSourceQueue
+    : ({} as Required<IPlaylist> | AlbumWithTracks),
   error: undefined,
-  isDisplayed: false,
-  type: "not-selected",
+  type: localQueueType ? localQueueType : "not-selected",
 };
 
 const queueSlice = createSlice({
@@ -36,7 +58,7 @@ const queueSlice = createSlice({
     ) {
       state.currentQueue = action.payload;
     },
-    setQueueType(state, action: PayloadAction<tracksState["type"]>) {
+    setQueueType(state, action: PayloadAction<currentQueueState["type"]>) {
       state.type = action.payload;
     },
   },
@@ -44,7 +66,5 @@ const queueSlice = createSlice({
 export const { setCurrentQueue, setQueueType } = queueSlice.actions;
 export const currentQueue = (state: RootState) =>
   state.currentQueueSlice.currentQueue;
-export const isVisible = (state: RootState) =>
-  state.currentQueueSlice.isDisplayed;
 export const queueType = (state: RootState) => state.currentQueueSlice.type;
 export const currentQueueSlice = queueSlice.reducer;

@@ -5,6 +5,7 @@ import { playlistSlice } from "./reducers/selectedItemSlice";
 import { currentQueueSlice } from "./reducers/currentQueueSlice";
 import { rotorSliceReducer } from "./reducers/rotorSlice";
 import favoriteTracksSliceReducer from "./reducers/favoriteTracksSlice";
+import navigationSlice from "./reducers/navigationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     currentQueueSlice,
     rotorSliceReducer,
     favoriteTracksSliceReducer,
+    navigationSlice,
   },
 });
 export type RootState = ReturnType<typeof store.getState>;

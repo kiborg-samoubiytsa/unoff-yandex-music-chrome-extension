@@ -80,17 +80,12 @@ export const PlaylistSidebar: FC<Props> = ({ playlist }) => {
             index: number //displays track only if its available
           ) => (
             <Track
-              title={track.track.title}
-              id={track.track.id}
+              showCover={false}
               collection={playlist}
               index={index}
               key={index}
-              artists={artists[index]}
-              duration={track.track.durationMs}
               styles={trackStyles}
-              albumId={
-                track.track.albums.length > 0 ? track.track.albums[0].id : 0
-              }
+              track={track}
               collectionType="playlist"
             ></Track>
           )

@@ -21,10 +21,15 @@ const Header: FC<Props> = ({ setShowExitConfirm }) => {
     <nav className="header">
       <div className="contentContainer">
         {isSearchEnabled ? (
-          <Search
-            isSearchEnabled={isSearchEnabled}
-            setIsSearchEnabled={setIsSearchEnabled}
-          />
+          <>
+            <div
+              onClick={() => setIsSearchEnabled(true)}
+              className="enable_search"
+            >
+              <AiOutlineSearch className="enable_search-button" />
+            </div>
+            <Search setIsSearchEnabled={setIsSearchEnabled} />
+          </>
         ) : (
           <>
             <div

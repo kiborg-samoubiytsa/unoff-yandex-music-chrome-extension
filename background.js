@@ -5,22 +5,19 @@
   }
   ); */
 
+let uid;
+let access_token;
+
 const authorize = async () => {
   let isAccessTokenSent = false;
   let createdTabId;
 
-  let access_token = await chrome.cookies.get({
-    name: "token",
-    url: "https://zvuk-ponosa.glitch.me/",
-  });
-  let uid = await chrome.cookies.get({
-    name: "uid",
-    url: "https://zvuk-ponosa.glitch.me/",
-  });
+  let access_token;
+  let uid;
 
   chrome.tabs.create(
     {
-      url: "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d",
+      url: "https://oauth.yandex.ru/authorize?response_type=token&client_id=23cabbbdc6cd418abb4b39c32c41195d&force_confirm=true",
     },
     (tab) => {
       createdTabId = tab.id;
@@ -49,24 +46,27 @@ const authorize = async () => {
 
       uid = uidDataJson.id;
 
-      const now = new Date();
-
-      chrome.cookies.set({
-        expirationDate: Math.floor(now.getTime() / 1000) + 315360000,
-        name: "token",
-        value: access_token,
-        url: "https://zvuk-ponosa.glitch.me/",
-      });
-      chrome.cookies.set({
-        expirationDate: Math.floor(now.getTime() / 1000) + 315360000,
-        name: "uid",
-        value: uid,
-        url: "https://zvuk-ponosa.glitch.me/",
-      });
-      chrome.storage.local.set({ ["yandex-music-token"]: access_token });
-      chrome.storage.local.set({ ["yandex-music-uid"]: uid });
-      chrome.tabs.remove(createdTabId);
+      /*       chrome.cookies.set({ 
+        expirationDate: Math.floor(now.getTime() / 1000) + 315360000, 
+        name: "token", 
+        value: access_token, 
+        url: "https://zvuk-ponosa.glitch.me/", 
+      }); 
+      chrome.cookies.set({ 
+        expirationDate: Math.floor(now.getTime() / 1000) + 315360000, 
+        name: "uid", 
+        value: uid, 
+        url: "https://zvuk-ponosa.glitch.me/", 
+      }); */
+      /* await chrome.storage.local.set({ ["yandex-music-token"]: access_token }); 
+      await chrome.storage.local.set({ ["yandex-music-uid"]: uid }); */
       chrome.tabs.onUpdated.removeListener();
+      chrome.tabs.remove(createdTabId);
+      console.log("я сработал один раз");
+      await chrome.runtime.sendMessage({
+        userData: { uid: uid, token: access_token },
+        offscreen: true,
+      });
     }
   });
 };
@@ -85,10 +85,9 @@ const createOffscreen = async () => {
   console.log("234325");
 };
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener(async (message) => {
   if (message.code == "request_token") {
-    console.log(2);
-    authorize();
+    await authorize();
   }
 });
 
@@ -104,11 +103,11 @@ chrome.runtime.onMessage.addListener(async (message) => {
     await createOffscreen();
   }
   if (message.state == "paused") {
-    await createOffscreen();
+    /* await createOffscreen(); */
     await chrome.runtime.sendMessage({ state: "paused", offscreen: true });
   }
   if (message.state == "playing") {
-    await createOffscreen();
+    /* await createOffscreen(); */
     await chrome.runtime.sendMessage({ state: "playing", offscreen: true });
   }
 });

@@ -4,7 +4,6 @@ import { useSelector } from "react-redux";
 import {
   status as loadingStatus,
   selectedCollection,
-  isCollectionSelected,
   collectionType as type,
 } from "../../store/reducers/selectedItemSlice";
 import { favoriteTrackStatus } from "../../store/reducers/favoriteTracksSlice";
@@ -16,21 +15,16 @@ export const TracksSidebar: FC = () => {
   const collectionLoadingStatus = useSelector(loadingStatus);
   const source = useSelector(selectedCollection);
   const collectionType = useSelector(type);
-  const isPlaylistSelected = useSelector(isCollectionSelected);
   const favoriteLoadingStatus = useSelector(favoriteTrackStatus);
 
   return (
     <>
-      {isPlaylistSelected ? (
-        collectionLoadingStatus == "succeeded" &&
-        favoriteLoadingStatus == "succeeded" ? (
-          collectionType == "playlist" ? (
-            <PlaylistSidebar playlist={source as IPlaylist} />
-          ) : collectionType == "album" ? (
-            <AlbumSidebar album={source as AlbumWithTracks} />
-          ) : (
-            <></>
-          )
+      {collectionLoadingStatus == "succeeded" &&
+      favoriteLoadingStatus == "succeeded" ? (
+        collectionType == "playlist" ? (
+          <PlaylistSidebar playlist={source as IPlaylist} />
+        ) : collectionType == "album" ? (
+          <AlbumSidebar album={source as AlbumWithTracks} />
         ) : (
           <></>
         )

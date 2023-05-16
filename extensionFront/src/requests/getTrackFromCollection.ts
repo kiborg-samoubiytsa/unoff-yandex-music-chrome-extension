@@ -9,12 +9,10 @@ export const getQueueFromCollection = async (
     type == "album"
       ? `https://zvuk-ponosa.glitch.me/api/album/with-tracks/id=/${
           (collection as Album).id
-        }`
+        }/token=${userData.token}`
       : `https://zvuk-ponosa.glitch.me/api/playlists/info/user=${
           (collection as IPlaylist).owner.login
-        }/kind=${(collection as IPlaylist).kind}/username=${
-          userData.username
-        }/password=${userData.password}/`;
+        }/kind=${(collection as IPlaylist).kind}/token=${userData.token}/`;
 
   const { data } = await axios.get(url);
 

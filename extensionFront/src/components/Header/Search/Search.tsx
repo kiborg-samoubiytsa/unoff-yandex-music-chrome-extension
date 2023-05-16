@@ -5,11 +5,10 @@ import { AiOutlineClose, AiOutlineSearch } from "react-icons/ai";
 import { IconContext } from "react-icons";
 
 interface Props {
-  isSearchEnabled: boolean;
   setIsSearchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export const Search: FC<Props> = ({ isSearchEnabled, setIsSearchEnabled }) => {
+export const Search: FC<Props> = ({ setIsSearchEnabled }) => {
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
 
@@ -23,7 +22,7 @@ export const Search: FC<Props> = ({ isSearchEnabled, setIsSearchEnabled }) => {
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
-    const timeout = setTimeout(() => setSearchText(e.target.value), 1000);
+    const timeout = setTimeout(() => setSearchText(e.target.value), 1000); //sets searchValue after timeout
     debounceTimeoutRef.current = timeout;
   };
 
@@ -35,9 +34,9 @@ export const Search: FC<Props> = ({ isSearchEnabled, setIsSearchEnabled }) => {
     <div className="search_container">
       <div className="search">
         <IconContext.Provider value={{ size: "24px" }}>
-          <div className="enable_search-button">
+          {/* <div className="enable_search-button">
             <AiOutlineSearch className="enable_search-button" />
-          </div>
+          </div> */}
           <input
             type="text"
             placeholder="Поиск"

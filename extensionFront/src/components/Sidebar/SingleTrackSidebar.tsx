@@ -60,16 +60,13 @@ export const SingleTrackSidebar = () => {
               <span className="defaultText">ПОХОЖИЕ ТРЕКИ</span>
               {trackInfo.similar.similarTracks.map((track, index) => (
                 <Track
-                  title={track.title}
-                  id={track.id}
+                  showCover={false}
                   index={index}
                   key={index}
-                  duration={track.durationMs}
                   styles={trackStyles}
-                  albumId={track.albums[0].id}
+                  track={track}
                   collection={trackInfo.similar}
                   collectionType="similar-tracks"
-                  artists={track.artists}
                 ></Track>
               ))}
             </div>

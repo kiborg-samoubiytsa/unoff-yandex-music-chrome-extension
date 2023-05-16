@@ -3,6 +3,7 @@ import axios from "axios";
 import { SearchResponse } from "../../../types/types";
 import "./SearchResults.scss";
 import { TrackResults } from "./SearchResultTypes/TrackResults";
+import useFetch from "../../../hooks/useFetch";
 
 interface Props {
   searchText: string;
@@ -11,9 +12,9 @@ interface Props {
 
 export const SearchResults: FC<Props> = ({ searchText, showResults }) => {
   const userData = JSON.parse(localStorage.getItem("user-data") || "");
-  const [data, setData] = useState<SearchResponse>({} as SearchResponse);
+  /* const [data, setData] = useState<SearchResponse>({} as SearchResponse); */
 
-  useEffect(() => {
+  /*   useEffect(() => {
     (async () => {
       if (searchText.length > 0) {
         const { data: searchData } = await axios.get(
@@ -22,11 +23,19 @@ export const SearchResults: FC<Props> = ({ searchText, showResults }) => {
         setData(searchData as SearchResponse);
       }
     })();
-  }, [searchText]);
+  }, [searchText]); */
+
+  const { data, state, error } = useFetch<SearchResponse>(
+    `https://zvuk-ponosa.glitch.me/api/search/text=${searchText}/token=${userData.token}`
+  );
+
+  useEffect(() => {
+    console.log(data);
+  }, [data]);
 
   return (
     <>
-      {showResults && Object.keys(data).length > 0 ? (
+      {showResults && data && Object.keys(data).length > 0 ? (
         <div className="search_results">
           {data.tracks ? (
             <TrackResults trackArray={data?.tracks.results} />

@@ -1,4 +1,5 @@
 .search_results {
+  right: 10px;
   background-color: #0e0e0e;
   color: white;
   box-shadow: 3px 12px 10px 3px rgba($color: #000000, $alpha: 0.6);
@@ -6,7 +7,7 @@
   width: 300px;
   position: absolute;
   animation: expand-bottom forwards 0.3s;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 @keyframes expand-bottom {

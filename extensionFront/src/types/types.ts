@@ -324,6 +324,17 @@ export type Track = {
   ogImage?: string;
 };
 
+export type RotorTrack = {
+  liked: boolean;
+  track: Track;
+  trackParameters: {
+    bpm: number;
+    hue: number;
+    energy: number;
+  };
+  type: string;
+};
+
 export type IArtist = {
   id: number;
   name: string;

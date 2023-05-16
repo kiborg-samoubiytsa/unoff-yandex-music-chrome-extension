@@ -7,17 +7,13 @@ import {
   trackCover,
   trackTitle,
   setTrackStatus,
-  setCurrentTrackAlbum,
-  setArtists,
-  setTitle,
-  setCover,
-  setUrl,
+  _trackCurrentDuration,
+  setCurrentTrackProgress,
 } from "../../store/reducers/currentTrackSlice";
 import { useSelector, useDispatch } from "react-redux";
 import { IconContext } from "react-icons";
 import { AiOutlinePause, AiOutlineUnorderedList } from "react-icons/ai";
 import { BiPlay, BiSkipNext, BiSkipPrevious } from "react-icons/bi";
-import { MdRepeat, MdRepeatOne, MdVolumeUp, MdVolumeOff } from "react-icons/md";
 import { FaTheaterMasks } from "react-icons/fa";
 import styles from "./Player.module.scss";
 import { durationToMinutes } from "../../helpers/durationToMinutes";
@@ -28,15 +24,13 @@ import {
   AlbumWithTracks,
   Track,
   SimilarTracks,
+  RotorTrack,
 } from "../../types/types";
 import {
   selectIsPlaying,
   selectIndex,
 } from "../../store/reducers/currentTrackSlice";
-import {
-  setIsRadioMode,
-  isPlayerVisible as isVisible,
-} from "../../store/reducers/playerSlice";
+import { setIsRadioMode } from "../../store/reducers/playerSlice";
 import { AppDispatch, RootState } from "../../store/store";
 import { startAudioRequest } from "../../requests/startAudioRequest";
 import { endAudioRequest } from "../../requests/endAudioRequest";
@@ -44,15 +38,14 @@ import { generatePlayId } from "../../helpers/generatePlayId";
 import {
   setCurrentTrackId,
   fetchTrackUrl,
+  _trackDuration,
+  setCurrentTrackDuration,
 } from "../../store/reducers/currentTrackSlice";
 import {
   fetchRotorQueue,
   fetchRotorSettings,
   rotorQueueStatus,
   rotorSettings as _rotorSettings,
-  setRotorLoadingStatus,
-  setRotorQueue,
-  setSettingsValues,
 } from "../../store/reducers/rotorSlice";
 import { sendRotorFeedBack } from "../../requests/rotorFeedback";
 import { RotorSettings } from "./RotorSettings";
@@ -67,7 +60,6 @@ import {
   setItemMetadata,
   setSelectedItemType,
 } from "../../store/reducers/selectedItemSlice";
-import { useCurrentTrack } from "../../hooks/useCurrentTrackInfo";
 
 interface Props {
   setIsQueueDisplayed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -75,70 +67,38 @@ interface Props {
 }
 const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   //useStates
-  const {
-    localTitle,
-    localCover,
-    localArtists,
-    localCurrentTrackId,
-    localSourceQueue,
-    localQueueType,
-    localMetadata,
-    localIsRadioMode,
-    localIndex,
-    localIsPlaying,
-    localRotorStatus,
-    localRotorQueue,
-    localMaxDuration,
-    localSrc,
-    localCurrentDuration,
-  } = localStorage.getItem("lastPlayerState")
-    ? JSON.parse(localStorage.getItem("lastPlayerState") || "")
-    : {
-        localTitle: "",
-        localCover: "",
-        localArtists: [],
-        localCurrentTrackId: "",
-        localSourceQueue: "",
-        localQueueType: "",
-        localMetadata: "",
-        localIsRadioMode: false,
-        localIndex: null,
-        localRotorStatus: "idle",
-        localRotorQueue: [],
-        localMaxDuration: 0,
-        localIsPlaying: false,
-        localSrc: "",
-        localCurrentDuration: 0,
-      };
 
-  const [maxDuration, setMaxDuration] = useState<number>(0); //this state is used to display the duration of track
-  const [currentDuration, setCurrentDuration] = useState<number>(0); //this state is used to display time track has been playing
   const [volume, setVolume] = useState<number>(
     localStorage.getItem("user-volume")
       ? JSON.parse(localStorage.getItem("user-volume") || "1")
       : 1
   ); //actual volume level
-  const [isTimeBeingChanged, setIsTimeBeingChanged] = useState<boolean>(false); //state that sets to true when user drags or clicks range with duration. used to prevent bug when displayed progress overwrites value, that is being input by user
+  const [isTimeBeingChanged, setIsTimeBeingChanged] = useState<boolean>(false); //state that sets to true when user drags or clicks range with duration. used to prevent bug when change of progress overwrites value, that is being input by user
   const [isReplayTrack, setIsReplayTrack] = useState<boolean>(false); //state that is used
   const [isReplayPlaylist, setIsReplayPlaylist] = useState<boolean>(false);
   const [displayTimeBar, setDisplayTimeBar] = useState<boolean>(false); //state that is used to control visibility of popup with time user will set track to when clicks
   const [cursorX, setCursorX] = useState<number>(0);
   const [displayRotorSettings, setDisplayRotorSettings] =
     useState<boolean>(false); //if true, displays user mood settings for reccoendations
-
+  const [imageLoadingStatus, setImageLoadingStatus] = useState<
+    "idle" | "loading" | "succeeded" | "error"
+  >("idle");
   //useRefs
 
   const radioTrackEndReason = useRef<"trackFinished" | "skip">("trackFinished");
-  const audioTimeRef = useRef<number>(0); //refers to time has been played
+  const audioTimeRef = useRef<number>(
+    localStorage.getItem("lastPlayerState")
+      ? JSON.parse(localStorage.getItem("lastPlayerState")).localCurrentDuration
+      : 0
+  ); //refers to time has been played
   const timeRangeRef = useRef<HTMLInputElement>(null);
   const volumeRangeRef = useRef<HTMLInputElement>(null); //value for sound, used for display
   const isQueuePresent = useRef<boolean>(false);
   const playIdRef = useRef<string>(generatePlayId());
-  const isFirstRender = useRef<boolean>(true);
+  const isFirstTrackRender = useRef<boolean>(true);
 
   //useSelectors
 
-  const isPlayerVisible = useSelector(isVisible);
   const sourceQueue = useSelector(
     (state: RootState) => state.currentQueueSlice.currentQueue
   );
@@ -149,30 +109,38 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
 
   const isPlaying = useSelector(selectIsPlaying);
 
-  const tracksArray =
+  const tracksArrayRef = useRef(
     queueType == "playlist"
       ? (sourceQueue as IPlaylist).tracks
       : queueType == "album"
-      ? (sourceQueue as AlbumWithTracks).volumes?.flat()
+      ? (sourceQueue as AlbumWithTracks).volumes.flat()
       : queueType == "similar-tracks"
       ? (sourceQueue as SimilarTracks).similarTracks
       : queueType == "track"
       ? (sourceQueue as Track[])
-      : [];
+      : queueType == "rotor-track"
+      ? (sourceQueue as RotorTrack[])
+      : []
+  );
 
   const trackLoadingStatus = useSelector(
     (state: RootState) => state.currentTrack.status
-  );
-  const rotorQueue = useSelector(
-    (state: RootState) => state.rotorSliceReducer.rotorQueue
   );
   const isRadioMode = useSelector(
     (state: RootState) => state.playerSlice.isInRadioMode
   );
   const metadata = useSelector(selectedItemMeta);
 
+  const trackProgress = useSelector(_trackCurrentDuration);
+
+  const trackDuration = useSelector(_trackDuration);
+
   const currentTrackId = useSelector(
     (state: RootState) => state.currentTrack.currentTrackId
+  );
+
+  const currentTrackAlbumId = useSelector(
+    (state: RootState) => state.currentTrack.currentTrackAlbumId
   );
 
   const rotorStatus = useSelector(rotorQueueStatus);
@@ -185,52 +153,77 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
 
   const rotorSettings = useSelector(_rotorSettings);
 
-  //others
-
-  const radioIdArray = rotorQueue.map((track: any) => {
-    return track.track.id;
-  });
-  const trackIdArray = tracksArray?.map((track) => {
-    return track.id;
-  });
-
   useLayoutEffect(() => {
-    console.log(localCurrentDuration);
-    if (
-      localStorage.getItem("lastPlayerState") &&
-      JSON.parse(localStorage.getItem("lastPlayerState") || "").hasOwnProperty(
-        "localSourceQueue"
-      )
-    ) {
-      console.log(localSrc);
-      dispatch(setUrl(src));
-      dispatch(setCurrentTrackId(localCurrentTrackId));
-      dispatch(setCurrentQueue(localSourceQueue));
-      dispatch(setQueueType(localQueueType));
-      dispatch(setItemMetadata(localMetadata));
-      dispatch(setIndex(localIndex));
-      dispatch(setIsRadioMode(localIsRadioMode));
-      dispatch(setRotorLoadingStatus(localRotorStatus));
-      dispatch(setRotorQueue(localRotorQueue));
-      dispatch(setIsPlaying(localIsPlaying));
-      //1 достает из локального хранилища длительности и обновляет реф с данными для аналитики
-      setCurrentDuration(localCurrentDuration);
-      audioTimeRef.current = localCurrentDuration;
-      //2 сетает стейт, который отображается на инпут рендже и в диве с текущей длительностью
-      if (!maxDuration) {
-        setMaxDuration(localMaxDuration);
+    chrome?.runtime.onMessage.addListener((msg) => {
+      if (msg.duration) {
+        dispatch(setCurrentTrackDuration(msg.duration));
+        dispatch(setTrackStatus("playing"));
       }
-    }
-    console.log("second");
+      /* if (msg.index || msg.index == 0) {
+        dispatch(setIndex(msg.index));
+      } */
+      if (msg.currentTime || msg.currentTime == 0) {
+        dispatch(setCurrentTrackProgress(msg.currentTime));
+        audioTimeRef.current = msg.currentTime;
+      }
+      if (msg.track_ended) {
+        console.log("член");
+        if (index || index == 0) {
+          console.log(index);
+          if (
+            !isReplayTrack &&
+            index < tracksArrayRef.current!.length - 1 &&
+            !isRadioMode
+          ) {
+            console.log("негрик");
+            handleSkipNextPlaylist();
+          } else if (isReplayTrack) {
+            dispatch(setIndex(index || 0));
+          }
+          if (
+            !isReplayPlaylist &&
+            index >= tracksArrayRef.current!.length - 1 &&
+            !isReplayTrack
+          ) {
+            /* dispatch(setIsRadioMode(true));
+            dispatch(setIndex(0));
+            dispatch(fetchRotorSettings());
+            sendRotorFeedBack("radioStarted", "web-radio-playlist-autoflow"); */
+          }
+          if (
+            !isReplayTrack &&
+            index <= tracksArrayRef.current.length - 1 &&
+            isRadioMode
+          ) {
+            handleSkipNextRadio("trackFinished");
+          }
+        } else {
+          console.log(index);
+        }
+      }
+      if (msg.rotorMode) {
+        console.log("негры");
+        const { localSourceQueue } = localStorage.getItem("lastPlayerState")
+          ? JSON.parse(localStorage.getItem("lastPlayerState"))
+          : [];
+        dispatch(setIndex(0));
+        tracksArrayRef.current = localSourceQueue;
+        dispatch(setCurrentQueue(localSourceQueue));
+        dispatch(setIsRadioMode(true));
+        dispatch(setQueueType("rotor-track"));
+      }
+    });
+
     window.addEventListener("unload", () => {
       localStorage.setItem(
         "lastPlayerState",
         JSON.stringify({
-          ...JSON.parse(localStorage.getItem("lastPlayerState") as string),
+          ...JSON.parse(localStorage.getItem("lastPlayerState") as string), //sets
           localCurrentDuration: audioTimeRef.current,
         })
       );
     });
+
     return () => {
       window.addEventListener("unload", () => {
         localStorage.setItem(
@@ -244,12 +237,31 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     };
   }, []);
 
-  useCurrentTrack();
+  useEffect(() => {
+    console.log(trackLoadingStatus);
+  }, [trackLoadingStatus]);
 
   useEffect(() => {
-    console.log(tracksArray);
-  }, [queueType]);
-
+    console.log(tracksArrayRef.current);
+  }, []);
+  useEffect(() => {
+    tracksArrayRef.current =
+      queueType == "playlist"
+        ? (sourceQueue as IPlaylist).tracks
+        : queueType == "album"
+        ? (sourceQueue as AlbumWithTracks).volumes.flat()
+        : queueType == "similar-tracks"
+        ? (sourceQueue as SimilarTracks).similarTracks
+        : queueType == "track"
+        ? (sourceQueue as Track[])
+        : queueType == "rotor-track"
+        ? (sourceQueue as RotorTrack[])
+        : [];
+    console.log(sourceQueue);
+  }, [sourceQueue]);
+  useEffect(() => {
+    console.log(index);
+  }, [index]);
   useEffect(() => {
     if (trackLoadingStatus == "succeeded") {
       handleStartPlaying();
@@ -257,7 +269,9 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   }, [index, trackLoadingStatus]);
 
   useEffect(() => {
+    console.log(trackLoadingStatus);
     if (trackLoadingStatus == "playing") {
+      console.log("негрик");
       localStorage.setItem(
         "lastPlayerState",
         JSON.stringify({
@@ -270,61 +284,63 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
           localMetadata: metadata,
           localIsRadioMode: isRadioMode,
           localIndex: index,
+          localCurrentTrackAlbumId: currentTrackAlbumId,
           localRotorStatus: rotorStatus,
-          localRotorQueue: rotorQueue,
-          localMaxDuration: maxDuration,
+          localMaxDuration: trackDuration,
           localSrc: src,
           localIsPlaying: isPlaying,
+          localPlayId: playIdRef.current,
         })
       );
     }
     return () => {
       console.log(audioTimeRef.current);
     };
-  }, [currentTrackId, maxDuration]);
+  }, [trackDuration, currentTrackId, trackLoadingStatus]);
 
   useEffect(() => {
     return () => {
       if (isQueuePresent.current) {
-        if (!isRadioMode && queueType == "playlist" && tracksArray) {
+        if (!isRadioMode && queueType == "playlist" && tracksArrayRef.current) {
           endAudioRequest(
-            (tracksArray as PlaylistTrack[])[index || 0].track,
+            (tracksArrayRef.current as PlaylistTrack[])[index || 0].track,
             audioTimeRef.current,
             playIdRef.current,
             metadata,
-            (tracksArray as PlaylistTrack[])[index || 0].track.albums[0],
+            (tracksArrayRef.current as PlaylistTrack[])[index || 0].track
+              .albums[0],
             sourceQueue as IPlaylist
           );
         }
         if (
           !isRadioMode &&
           (queueType == "album" || queueType == "similar-tracks") &&
-          tracksArray
+          tracksArrayRef.current
         ) {
           endAudioRequest(
-            (tracksArray as Track[])[index || 0],
+            (tracksArrayRef.current as Track[])[index || 0],
             audioTimeRef.current,
             playIdRef.current,
             metadata,
             sourceQueue as AlbumWithTracks
           );
         }
-        if (!isRadioMode && queueType == "track" && tracksArray) {
+        if (!isRadioMode && queueType == "track" && tracksArrayRef.current) {
           endAudioRequest(
-            (tracksArray as Track[])[index || 0],
+            (tracksArrayRef.current as Track[])[index || 0],
             audioTimeRef.current,
             playIdRef.current,
             metadata,
             sourceQueue as AlbumWithTracks
           );
         }
-        if (isRadioMode && rotorQueue) {
+        if (isRadioMode) {
           endAudioRequest(
-            rotorQueue[index || 0].track,
+            (tracksArrayRef.current[index] as RotorTrack).track,
             audioTimeRef.current,
             playIdRef.current,
             metadata,
-            rotorQueue[index || 0].track.albums[0]
+            (tracksArrayRef.current[index] as RotorTrack).track.albums[0]
           );
         }
       }
@@ -337,9 +353,9 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
         timeRangeRef.current?.valueAsNumber == 0) &&
       !isTimeBeingChanged
     ) {
-      timeRangeRef.current.valueAsNumber = currentDuration;
+      timeRangeRef.current.valueAsNumber = trackProgress;
     }
-  }, [currentDuration, isTimeBeingChanged]);
+  }, [trackProgress, isTimeBeingChanged]);
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -355,7 +371,7 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
       );
     }
     (async () => {
-      const response = await chrome.runtime.sendMessage({
+      await chrome.runtime.sendMessage({
         state: "playing",
       });
       console.log("плеинг нажался");
@@ -363,7 +379,6 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   };
   const handleStartPlaying = async () => {
     isQueuePresent.current = true;
-    dispatch(setTrackStatus("playing"));
     dispatch(setIsPlaying(true));
     if (localStorage.getItem("lastPlayerState")) {
       localStorage.setItem(
@@ -377,7 +392,7 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     if (queueType == "playlist" && !isRadioMode) {
       setTimeout(async () => {
         await startAudioRequest(
-          (tracksArray as PlaylistTrack[])[index || 0].track,
+          (tracksArrayRef.current as PlaylistTrack[])[index || 0].track,
           playIdRef.current,
           metadata,
           sourceQueue as IPlaylist
@@ -387,28 +402,27 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     if (queueType == "album" && !isRadioMode) {
       setTimeout(async () => {
         await startAudioRequest(
-          (tracksArray as Track[])![index || 0],
+          (tracksArrayRef.current as Track[])![index || 0],
           playIdRef.current,
           metadata
         );
       }, 200);
     }
-    if (rotorQueue && isRadioMode) {
+    if (tracksArrayRef.current && isRadioMode) {
       setTimeout(async () => {
         await startAudioRequest(
-          rotorQueue![index || 0].track,
+          (tracksArrayRef.current[index] as RotorTrack).track,
           playIdRef.current,
           metadata
         );
       });
-      dispatch(setCurrentTrackId(radioIdArray[index || 0]));
     }
     if (isRadioMode) {
       sendRotorFeedBack(
         "trackStarted",
         metadata,
-        `${rotorQueue![index || 0].track.id}:${
-          rotorQueue![index || 0].track.albums[0].id
+        `${(tracksArrayRef.current[index] as RotorTrack).track.id}:${
+          (tracksArrayRef.current[index] as RotorTrack).track.albums[0].id
         }`,
         0
       );
@@ -433,22 +447,26 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
 
   const displayPopUpTimeBar = () => {
     if (
-      (maxDuration / timeRangeRef.current!.offsetWidth) *
+      (trackDuration / timeRangeRef.current!.offsetWidth) *
         (cursorX -
           (window.innerWidth - timeRangeRef.current!.offsetWidth) / //divided by 2 because there's a padding at right and left
             2) >
-      maxDuration
+      trackDuration
     ) {
-      return durationToMinutes(maxDuration * 1000);
+      return durationToMinutes(trackDuration * 1000);
     }
     return durationToMinutes(
-      (maxDuration / timeRangeRef.current!.offsetWidth) *
+      (trackDuration / timeRangeRef.current!.offsetWidth) *
         (cursorX -
           (window.innerWidth - timeRangeRef.current!.offsetWidth) / //divided by 2 because there's a padding at right and left
             2) *
         1000 //
     );
   };
+  //
+  useEffect(() => {
+    console.log(index);
+  }, [index]);
 
   const changeStorageVolumeValue = () => {
     localStorage.setItem(
@@ -457,38 +475,9 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     );
   };
 
-  chrome?.runtime.onMessage.addListener(async (msg) => {
-    if (msg.duration) {
-      setMaxDuration(msg.duration);
-    }
-    if (msg.currentTime || msg.currentTime == 0) {
-      setCurrentDuration(msg.currentTime);
-      audioTimeRef.current = msg.currentTime;
-    }
-    if (msg.trackEnded) {
-      console.log("negro");
-      if (index || index == 0) {
-        if (!isReplayTrack && index < tracksArray!.length - 1 && !isRadioMode) {
-          handleSkipNextPlaylist();
-        } else if (isReplayTrack) {
-          dispatch(setIndex(index || 0));
-        }
-        if (
-          !isReplayPlaylist &&
-          index >= tracksArray!.length - 1 &&
-          !isReplayTrack
-        ) {
-          dispatch(setIsRadioMode(true));
-          dispatch(setIndex(0));
-          dispatch(fetchRotorSettings());
-          sendRotorFeedBack("radioStarted", "web-radio-playlist-autoflow");
-        }
-        if (!isReplayTrack && index <= rotorQueue.length - 1 && isRadioMode) {
-          handleSkipNextRadio("trackFinished");
-        }
-      }
-    }
-  });
+  useEffect(() => {
+    console.log(trackDuration);
+  }, [trackDuration]);
 
   const handleVolumeChange = () => {
     setVolume(volumeRangeRef.current?.valueAsNumber || 0);
@@ -515,11 +504,13 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   };
   const handleSkipPrevious = () => {
     if (
-      (trackLoadingStatus == "playing" || trackLoadingStatus == "succeeded") &&
+      (trackLoadingStatus == "playing" ||
+        trackLoadingStatus == "succeeded" ||
+        trackLoadingStatus == "loaded-from-localStorage") &&
       !isRadioMode
     ) {
-      if (currentDuration) {
-        if (currentDuration < 10) {
+      if (trackProgress) {
+        if (trackProgress < 10) {
           //if track current time is less than 5 seconds, changes track index. If not, replays the track
           if (index || index == 0) {
             const newIndex = index - 1;
@@ -528,7 +519,7 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
             }
           }
         } else {
-          setCurrentDuration(0);
+          dispatch(setCurrentTrackProgress(0));
           chrome?.runtime.sendMessage({
             time: 0,
             offscreen: true,
@@ -544,9 +535,9 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   useEffect(() => {
     //fetches rotor array if track playing is the last in playlist
     if (
-      tracksArray?.length &&
+      tracksArrayRef.current?.length &&
       (index || index == 0) &&
-      index + 1 > tracksArray.length - 1 &&
+      index + 1 > tracksArrayRef.current?.length - 1 &&
       !isRadioMode
     ) {
       dispatch(fetchRotorQueue());
@@ -554,7 +545,7 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
   }, [sourceQueue, index, isRadioMode]);
 
   useEffect(() => {
-    console.log(tracksArray);
+    console.log(tracksArrayRef.current);
     console.log(queueType);
   }, [sourceQueue]);
   useEffect(() => {
@@ -562,29 +553,50 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     if (
       isRadioMode &&
       (index || index == 0) &&
-      index + 1 > radioIdArray.length - 1
+      index + 1 > tracksArrayRef.current.length
     ) {
       dispatch(fetchRotorQueue());
     }
   }, [index, isRadioMode]);
 
   useEffect(() => {
-    if (index != localIndex && sourceQueue != localSourceQueue) {
+    console.log(index);
+    console.log(tracksArrayRef.current[index], tracksArrayRef.current[0]);
+    console.log(tracksArrayRef.current, sourceQueue);
+    console.log(
+      currentTrackId,
+      (tracksArrayRef.current[index] as RotorTrack).track.id
+    );
+    if (
+      (queueType != "rotor-track" &&
+        currentTrackId != (tracksArrayRef.current as Track[])[index].id) ||
+      (queueType == "rotor-track" &&
+        currentTrackId !=
+          (tracksArrayRef.current as RotorTrack[])[index].track.id)
+    ) {
+      // (tracksArrayRef.current[index] as RotorTrack).track,
       console.log("я сосал(нажалась загрузка юрла)");
-      if (!isRadioMode && (index || index == 0) && trackIdArray) {
-        dispatch(fetchTrackUrl(trackIdArray[index]?.toString()));
+      if (!isRadioMode && (index || index == 0) && tracksArrayRef.current) {
+        dispatch(
+          fetchTrackUrl(
+            (tracksArrayRef.current as Track[])[index]?.id?.toString()
+          )
+        );
         chrome.runtime.sendMessage({
           track_index: index,
           offscreen: true,
         });
       }
-      if (isRadioMode && (index || index == 0) && radioIdArray) {
-        dispatch(fetchTrackUrl(radioIdArray![index]));
-        dispatch(fetchTrackUrl(trackIdArray[index]?.toString()));
+      if (isRadioMode && (index || index == 0)) {
+        dispatch(
+          fetchTrackUrl(
+            (tracksArrayRef.current[index] as RotorTrack)?.track.id.toString()
+          )
+        );
         chrome.runtime.sendMessage({
           track_index: index,
         });
-        console.log(currentTrackId, radioIdArray![index]);
+        console.log(currentTrackId);
       }
     }
     return () => {
@@ -592,8 +604,8 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
         sendRotorFeedBack(
           radioTrackEndReason.current,
           metadata,
-          `${rotorQueue![index || 0].track.id}:${
-            rotorQueue![index || 0].track.albums[0].id
+          `${(tracksArrayRef.current[index] as RotorTrack)?.track.id}:${
+            (tracksArrayRef.current[index] as RotorTrack)?.track.albums[0].id
           }`,
           audioTimeRef.current
         );
@@ -601,44 +613,37 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
     };
   }, [index, isRadioMode, sourceQueue]);
 
-  useEffect(() => {
-    console.log(cursorX);
-  }, [cursorX]);
-
   const handleSkipNextPlaylist = () => {
     if (
       trackLoadingStatus == "playing" ||
       trackLoadingStatus == "succeeded" ||
-      trackLoadingStatus == "idle"
+      trackLoadingStatus == "loaded-from-localStorage"
     ) {
-      if (index || index == 0) {
-        const newIndex = index + 1;
-        if (newIndex <= tracksArray!.length - 1) {
-          dispatch(setIndex(newIndex));
-        }
+      console.log("хуй");
+      const newIndex = index + 1;
+      if (newIndex <= tracksArrayRef.current!.length - 1) {
+        console.log(newIndex, index);
+        dispatch(setIndex(newIndex));
       }
     }
   };
 
-  const handleSkipNextRadio = (reason: "trackFinished" | "skip") => {
+  const handleSkipNextRadio = (reason?: "trackFinished" | "skip") => {
     if (
       (trackLoadingStatus == "playing" ||
         trackLoadingStatus == "succeeded" ||
-        trackLoadingStatus == "idle") &&
+        trackLoadingStatus == "loaded-from-localStorage") &&
       rotorStatus == "succeeded"
     ) {
+      console.log("траходром");
       if (index || index == 0) {
         console.log(index);
         const newIndex = index + 1;
         radioTrackEndReason.current = reason;
         dispatch(setIndex(newIndex));
-        if (newIndex > radioIdArray.length - 1) {
-          dispatch(setIndex(0));
-        }
       }
     }
   };
-  const onTrackEnded = () => {};
   return (
     <div
       onKeyDown={(e) => {
@@ -652,16 +657,16 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
       }}
       tabIndex={0}
     >
-      {isPlayerVisible ? (
+      {
         <div className={styles.playerContainer}>
           <div className={styles.playerActive}>
             <span className={styles.currentDuration}>
-              {durationToMinutes(currentDuration * 1000) || "00:00"}
+              {durationToMinutes(trackProgress * 1000) || "00:00"}
             </span>
             <input
               type="range"
               min={0}
-              max={maxDuration}
+              max={trackDuration}
               step="any"
               onMouseMove={(e) => {
                 setDisplayTimeBar(true);
@@ -685,32 +690,32 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
               }}
             />
             <span className={styles.maxDuration}>
-              {durationToMinutes(maxDuration * 1000) || "00:00"}
+              {durationToMinutes(trackDuration * 1000) || "00:00"}
             </span>
-            {trackLoadingStatus != "loading" ? (
+            {trackLoadingStatus != "loading" &&
+            imageLoadingStatus != "loading" ? (
               <>
                 <div className={styles.trackInfoContainer}>
-                  <img
-                    src={
-                      (localCover != "" && trackLoadingStatus == "idle") ||
-                      localCover == cover
-                        ? localCover
-                        : cover
-                    }
-                    alt={title}
-                    className={styles.trackCover}
-                  />
+                  {imageLoadingStatus != "error" ? (
+                    <div className={styles.trackCover}>
+                      <img
+                        src={cover}
+                        alt={title}
+                        onLoadStart={() => setImageLoadingStatus("loading")}
+                        onLoad={() => setImageLoadingStatus("succeeded")}
+                        onError={() => setImageLoadingStatus("error")}
+                      />
+                    </div>
+                  ) : (
+                    <div className={styles.trackCover}>
+                      Тут должна была быть картинка, но злой сервер решил ее не
+                      отдавать
+                    </div>
+                  )}
                   <div className={styles.trackInfo}>
-                    <span className={styles.title}>
-                      {localTitle && trackLoadingStatus == "idle"
-                        ? localTitle
-                        : title}
-                    </span>
+                    <span className={styles.title}>{title}</span>
                     <span className={styles.artists}>
-                      {(localArtists && trackLoadingStatus == "idle") ||
-                      localArtists == artists
-                        ? concatArtistNames(localArtists)
-                        : concatArtistNames(artists)}
+                      {concatArtistNames(artists)}
                     </span>
                   </div>
                 </div>
@@ -771,25 +776,6 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
               </IconContext.Provider>
             </div>
             <div className={styles.volumeControlsContainer}>
-              <div className={styles.volumeIconContainer}>
-                <IconContext.Provider value={{ size: "36" }}>
-                  {/*                   {volume > 0 ? (
-                    <MdVolumeUp
-                      className={styles.controlButton}
-                      onClick={() => setVolume(0)}
-                    />
-                  ) : (
-                    <MdVolumeOff
-                      className={styles.controlButton}
-                      onClick={() =>
-                        setVolume(
-                          JSON.parse(localStorage.getItem("user-volume") || "1")
-                        )
-                      }
-                    />
-                  )} */}
-                </IconContext.Provider>
-              </div>
               <div className={styles.volumeValueContainer}>
                 <input
                   type="range"
@@ -857,9 +843,7 @@ const Player: FC<Props> = ({ setIsQueueDisplayed, isQueueDisplayed }) => {
             {displayRotorSettings ? <RotorSettings /> : <></>}
           </div>
         </div>
-      ) : (
-        <></>
-      )}
+      }
     </div>
   );
 };

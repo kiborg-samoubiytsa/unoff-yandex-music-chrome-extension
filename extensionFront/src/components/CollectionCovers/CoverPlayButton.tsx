@@ -15,11 +15,7 @@ import { Album, AlbumWithTracks, IPlaylist } from "../../types/types";
 import { getQueueFromCollection } from "../../requests/getTrackFromCollection";
 import { BiPause, BiPlay } from "react-icons/bi";
 import { IconContext } from "react-icons";
-import {
-  isPlayerVisible as isVisible,
-  setIsRadioMode,
-  setPlayerVisible,
-} from "../../store/reducers/playerSlice";
+import { setIsRadioMode } from "../../store/reducers/playerSlice";
 
 interface Props {
   playlistInfo?: IPlaylist;
@@ -33,7 +29,6 @@ export const CoverPlayButton: FC<Props> = ({
   styles,
 }) => {
   const dispatch = useDispatch();
-  const isPlayerVisible = useSelector(isVisible);
 
   const currentQueue = useSelector(queue);
 
@@ -42,27 +37,37 @@ export const CoverPlayButton: FC<Props> = ({
   const queueType = useSelector(type);
 
   const handlePlaylistPlayStart = async () => {
-    if (!isPlayerVisible) {
-      dispatch(setPlayerVisible(true));
-    }
     if (playlistInfo) {
       if (playlistInfo.kind == (currentQueue as IPlaylist).kind) {
+        await chrome.runtime.sendMessage({
+          state: "playing",
+        });
+        console.log("плеинг нажался");
         dispatch(setIsPlaying(true));
       } else {
         const trackQueue = await getQueueFromCollection(
           "playlist",
           playlistInfo
         );
+        console.log(trackQueue);
         dispatch(setIsRadioMode(false));
         dispatch(setQueueType("playlist"));
         dispatch(setCurrentQueue(trackQueue));
         dispatch(setIndex(0));
         dispatch(setIsPlaying(true));
+        await chrome.runtime.sendMessage({
+          state: "playing",
+        });
+        console.log("плеинг нажался");
       }
     }
     if (albumInfo) {
       if (albumInfo.id == (currentQueue as AlbumWithTracks).id) {
         dispatch(setIsPlaying(true));
+        await chrome.runtime.sendMessage({
+          state: "playing",
+        });
+        console.log("плеинг нажался");
       } else {
         const trackQueue = await getQueueFromCollection("album", albumInfo);
         dispatch(setQueueType("album"));
@@ -70,10 +75,22 @@ export const CoverPlayButton: FC<Props> = ({
         dispatch(setIndex(0));
         dispatch(setIsPlaying(true));
         dispatch(setIsRadioMode(false));
+        (async () => {
+          await chrome.runtime.sendMessage({
+            state: "playing",
+          });
+          console.log("плеинг нажался");
+        })();
       }
     }
   };
   const handlePlaylistPause = () => {
+    (async () => {
+      await chrome.runtime.sendMessage({
+        state: "paused",
+      });
+      console.log("плеинг нажался");
+    })();
     dispatch(setIsPlaying(false));
   };
   return (

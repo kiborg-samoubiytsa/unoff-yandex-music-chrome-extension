@@ -42,15 +42,12 @@ export const AlbumSidebar: FC<Props> = ({ album }) => {
               {volume.map((track, index) =>
                 track.available ? ( //displays track only if its available
                   <Track
-                    artists={track.artists}
-                    title={track.title}
-                    id={track.id}
+                    showCover={false}
                     index={index}
                     key={index}
-                    duration={track.durationMs}
                     styles={trackStyles}
                     collection={album}
-                    albumId={album.id}
+                    track={track}
                     collectionType="album"
                   ></Track>
                 ) : (

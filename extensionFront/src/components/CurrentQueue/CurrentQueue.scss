@@ -13,7 +13,6 @@
     .infoContainer {
       background-color: #0e0e0e;
       width: 320px;
-      border-bottom: #777 1px solid;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -29,7 +28,7 @@
       }
       .closeButton:hover {
         transition: 200ms;
-        color: #222021;
+        color: #fff;
       }
       .currentQueueInfo {
         font-family: "Source Sans Pro", sans-serif;
@@ -58,7 +57,6 @@
       justify-content: center;
       overflow-y: scroll;
       width: 320px;
-      border-left: 1px solid #e5e5e5;
       background-color: #0e0e0e;
       box-sizing: border-box;
       margin-right: 1px;

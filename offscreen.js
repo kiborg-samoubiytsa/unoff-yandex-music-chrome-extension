@@ -7,16 +7,40 @@ const lastPlayerState = localStorage.getItem("lastPlayerState")
   ? JSON.parse(localStorage.getItem("lastPlayerState"))
   : {};
 
-let index = lastPlayerState.localIndex;
+let volume = JSON.parse(localStorage.getItem("user-volume") || "0");
 
-let id = lastPlayerState.localCurrentTrackId;
+let index = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState")).localIndex
+  : {};
+
+let isRadioMode = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState")).localIsRadioMode
+  : {};
+
+let id = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState")).localCurrentTrackId
+  : {};
 //last track id p.s. have to save it in local storage because of offscreen page lifetime cycle https://developer.chrome.com/docs/extensions/reference/offscreen/
 
-let src = lastPlayerState.localSrc; //default src for audio. Takes value from last track played
+let src = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState")).localSrc
+  : {}; //default src for audio. Takes value from last track played
 
-let currentQueue = lastPlayerState.localSourceQueue.tracks;
+let queueType = localStorage.getItem("lastPlayerState")
+  ? JSON.parse(localStorage.getItem("lastPlayerState")).localQueueType
+  : {};
 
-let queueType = lastPlayerState.localQueueType;
+let currentQueue = localStorage.getItem("lastPlayerState")
+  ? queueType == "playlist"
+    ? localStorage.getItem("lastPlayerState").localSourceQueue?.tracks
+    : queueType == "album"
+    ? localStorage.getItem("lastPlayerState").localSourceQueue?.volumes?.flat()
+    : queueType == "similar-tracks"
+    ? localStorage.getItem("lastPlayerState").localSourceQueue?.similarTracks
+    : queueType == "track"
+    ? localStorage.getItem("lastPlayerState")?.localSourceQueue
+    : []
+  : [];
 
 const audio = document.querySelector("audio");
 
@@ -32,7 +56,6 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   if ((await msg.volume) || (await msg.volume) == 0) {
     console.log(+msg.volume);
     audio.volume = +msg.volume;
-    localStorage.setItem("volume", JSON.stringify(msg.volume));
   }
   if ((await msg.time) || (await msg.time) == 0) {
     audio.currentTime = msg.time;
@@ -52,9 +75,13 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
         })
       );
       await playAudio();
-      chrome.runtime.sendMessage({ duration: audio.duration });
+      await chrome.runtime.sendMessage({ duration: audio.duration });
       return;
     }
+  }
+  if (msg.userData) {
+    console.log(msg.userData);
+    localStorage.setItem("user-data", JSON.stringify(msg.userData));
   }
   if (msg.state == "playing") {
     if (audio.src) {
@@ -63,6 +90,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
     } else console.log("no src");
   }
   if (msg.state == "paused") {
+    console.log("негрик");
     if (audio.src) {
       pauseAudio();
     }
@@ -81,16 +109,18 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   }
 
   if (msg.currentQueue && msg.type) {
-    currentQueue = msg.currentQueue.tracks;
+    console.log(msg.type);
+    currentQueue =
+      msg.type == "playlist"
+        ? msg.currentQueue.tracks
+        : msg.type == "album"
+        ? msg.currentQueue.volumes?.flat()
+        : msg.type == "similar-tracks"
+        ? msg.currentQueue.similarTracks
+        : msg.type == "track"
+        ? msg.currentQueue
+        : [];
     queueType = msg.type;
-    localStorage.setItem(
-      "lastPlayerState",
-      JSON.stringify({
-        ...lastPlayerState,
-        localSourceQueue: currentQueue,
-        localQueueType: queueType,
-      })
-    );
     console.log(currentQueue);
   }
   /*   if (msg.track_id) {
@@ -117,31 +147,50 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
   } */
 });
 
+const getYourWaveSequence = async () => {
+  const userData = JSON.parse(localStorage.getItem("user-data") || "");
+  const sequence = await fetch(
+    `https://zvuk-ponosa.glitch.me/api/rotor/station=user:onyourwave/uid=${userData.uid}/token=${userData.token}`,
+    { method: "GET", mode: "no-cors" }
+  );
+  const data = await sequence.json();
+  return data.result.sequence;
+};
+
 const onTrackEnded = async () => {
-  console.log("el aboba");
   /* await chrome?.runtime.sendMessage({
     trackEnded: true,
   }); */
   console.log(currentQueue, index);
-  const response = await fetch(
-    `https://zvuk-ponosa.glitch.me/api/get-mp3-link/id=${
-      currentQueue[index + 1].id
-    }`,
-    { method: "GET", mode: "no-cors" }
-  );
-  const data = await response.json();
-  console.log(JSON.parse(localStorage.getItem("user-data")));
-  audio.src = data.url;
 
-  const trackInfo = data.info[0];
+  console.log(lastPlayerState);
+  if (index < currentQueue.length - 1) {
+    const response = isRadioMode
+      ? await fetch(
+          `https://zvuk-ponosa.glitch.me/api/get-mp3-link/id=${
+            currentQueue[index + 1].track.id
+          }`,
+          { method: "GET", mode: "no-cors" }
+        )
+      : await fetch(
+          `https://zvuk-ponosa.glitch.me/api/get-mp3-link/id=${
+            currentQueue[index + 1].id
+          }`,
+          { method: "GET", mode: "no-cors" }
+        );
+    const data = await response.json();
+    console.log(JSON.parse(localStorage.getItem("user-data")));
+    id = currentQueue[index + 1].id;
+    audio.src = data.url;
 
-  console.log(index);
+    const trackInfo = data.info[0];
 
-  if (localStorage.getItem("lastPlayerState")) {
     localStorage.setItem(
       "lastPlayerState",
       JSON.stringify({
-        ...lastPlayerState,
+        ...(localStorage.getItem("lastPlayerState")
+          ? JSON.parse(localStorage.getItem("lastPlayerState"))
+          : {}),
         localTitle: trackInfo.title,
         localCover:
           `https://${trackInfo.coverUri?.replace("%%", "50x50")}` || "",
@@ -152,9 +201,56 @@ const onTrackEnded = async () => {
         localMaxDuration: trackInfo.durationMs / 1000,
       })
     );
+    console.log(index);
+    index += 1;
+    await chrome.runtime.sendMessage({ duration: audio.duration });
+    await chrome.runtime.sendMessage({
+      track_ended: true,
+    });
+  } else {
+    index = 0;
+
+    currentQueue = await getYourWaveSequence();
+
+    console.log(currentQueue[index]);
+    const response = await fetch(
+      `https://zvuk-ponosa.glitch.me/api/get-mp3-link/id=${currentQueue[index].track.id}`,
+      { method: "GET", mode: "no-cors" }
+    );
+    const data = await response.json();
+    console.log(JSON.parse(localStorage.getItem("user-data")));
+    id = currentQueue[index].id;
+    audio.src = data.url;
+
+    console.log(currentQueue);
+    console.log(index, audio.src);
+
+    const trackInfo = data.info[0];
+
+    localStorage.setItem(
+      "lastPlayerState",
+      JSON.stringify({
+        ...(localStorage.getItem("lastPlayerState")
+          ? JSON.parse(localStorage.getItem("lastPlayerState"))
+          : {}),
+        localTitle: trackInfo.title,
+        localCover:
+          `https://${trackInfo.coverUri?.replace("%%", "50x50")}` || "",
+        localArtists: trackInfo.artists,
+        localCurrentTrackId: trackInfo.id,
+        localIndex: index,
+        localSrc: src,
+        localMaxDuration: trackInfo.durationMs / 1000,
+        localIsRadioMode: true,
+        localSourceQueue: currentQueue,
+        localQueueType: "rotor-track",
+        localRotorStatus: "succeeded",
+      })
+    );
+    await chrome.runtime.sendMessage({ rotorMode: true, track_ended: true });
   }
-  index += 1;
-  playAudio();
+  console.log(currentQueue);
+  await playAudio();
 };
 
 audio.addEventListener("ended", onTrackEnded);
@@ -178,9 +274,9 @@ const playAudio = async () => {
   isPlaying = true;
   console.log(audio.src);
 };
-setInterval(() => {
+setInterval(async () => {
   if (isPlaying) {
-    chrome.runtime.sendMessage({ currentTime: audio.currentTime });
+    await chrome.runtime.sendMessage({ currentTime: audio.currentTime });
   }
 }, 50);
 

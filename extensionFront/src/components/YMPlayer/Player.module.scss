@@ -69,11 +69,17 @@
         height: 7px;
         cursor: pointer;
         border-radius: 20px;
+        margin-right: 4.5px;
       }
     }
     .trackCover {
       margin-top: 3px;
       user-select: none;
+      font-size: 12px;
+      color: white;
+      width: 180px;
+      text-align: center;
+      height: 50px;
     }
     .trackInfoContainer {
       position: relative;
